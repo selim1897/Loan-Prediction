@@ -2,42 +2,33 @@ import pandas as pd
 import streamlit as st
 from xgboost import XGBClassifier
 
-
 st.set_page_config(page_title="Input", page_icon="📈", layout="centered", initial_sidebar_state="auto", menu_items=None)
 
-to_numeric = {'Male': 1, 'Female': 2,
-'Yes': 1, 'No': 2,
-'Graduate': 1, 'Not Graduate': 2,
-'Urban': 3, 'Semiurban': 2,'Rural': 1,
-'Y': 1, 'N': 0,
-'3+': 3}
+to_numeric = {'Male': 1, 'Female': 2, 'Yes': 1, 'No': 2, 'Graduate': 1, 'Not Graduate': 2, 'Urban': 3, 'Semiurban': 2, 'Rural': 1, 'Y': 1, 'N': 0, '3+': 3}
 
-if 'xgb' not in st.session_state:
+@st.cache_data(hash_funcs={pd.DataFrame: id})
+def load_and_preprocess_data():
     df = pd.read_csv("Data.csv")
 
-    df.drop('Loan_ID',axis=1,inplace=True)
+    df.drop('Loan_ID', axis=1, inplace=True)
 
-    null_cols = ['Credit_History', 'Self_Employed', 'LoanAmount','Dependents', 'Loan_Amount_Term', 'Gender', 'Married']
-
+    null_cols = ['Credit_History', 'Self_Employed', 'LoanAmount', 'Dependents', 'Loan_Amount_Term', 'Gender', 'Married']
 
     for col in null_cols:
-        df[col] = df[col].fillna(
-        df[col].dropna().mode().values[0] )   
+        df[col] = df[col].fillna(df[col].dropna().mode().values[0])
 
-        
-    df.isnull().sum().sort_values(ascending=False)
+    df = df.applymap(lambda label: to_numeric.get(label) if label in to_numeric else label)
 
-    df = df.map(lambda lable: to_numeric.get(lable) if lable in to_numeric else lable)
+    df['Dependents'] = pd.to_numeric(df['Dependents'], errors='coerce').fillna(0)
 
-    Dependents = pd.to_numeric(df.Dependents)
+    return df
 
-    df.drop(['Dependents'], axis = 1, inplace = True)
-
-    df = pd.concat([df, Dependents], axis = 1)
+if 'xgb' not in st.session_state:
+    df_preprocessed = load_and_preprocess_data()
 
     XGB = XGBClassifier()
-    y = df['Loan_Status']
-    X = df.drop('Loan_Status', axis = 1)
+    y = df_preprocessed['Loan_Status']
+    X = df_preprocessed.drop('Loan_Status', axis=1)
     XGB.fit(X, y)
 
     st.session_state['xgb'] = XGB
@@ -60,9 +51,6 @@ def prediction():
         del st.session_state['info']
     
     x_pred = pd.DataFrame(data, index=[0])
-    dep = x_pred.Dependents
-    x_pred.drop(['Dependents'], axis = 1, inplace = True)
-    x_pred = pd.concat([x_pred, dep], axis = 1)
     y_predict = XGB.predict(x_pred)
     if y_predict[0] == 0:
         st.error('We regret to inform you that your loan application has not been approved at this time. ')
