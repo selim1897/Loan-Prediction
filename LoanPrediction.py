@@ -106,6 +106,6 @@ if st.button("Predict", type="primary"):
     prediction()
 
 if 'info' in st.session_state:
-    st.info(st.session_state['error'], icon="ℹ️")
+    st.info(st.session_state['info'], icon="ℹ️")
 
 
