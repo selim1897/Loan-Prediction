@@ -17,7 +17,7 @@ def load_and_preprocess_data():
     for col in null_cols:
         df[col] = df[col].fillna(df[col].dropna().mode().values[0])
 
-    df = df.applymap(lambda label: to_numeric.get(label) if label in to_numeric else label)
+    df = df.map(lambda label: to_numeric.get(label) if label in to_numeric else label)
 
     df['Dependents'] = pd.to_numeric(df['Dependents'], errors='coerce').fillna(0)
 
