@@ -8,9 +8,7 @@ to_numeric = {'Male': 1, 'Female': 2, 'Yes': 1, 'No': 2, 'Graduate': 1, 'Not Gra
 
 @st.cache_resource
 def load_and_preprocess_data():
-    df = pd.read_csv("cleaned_data.csv")
-
-    df_preprocessed = load_and_preprocess_data()
+    df_preprocessed = pd.read_csv("cleaned_data.csv")
 
     XGB = XGBClassifier()
     y = df_preprocessed['Loan_Status']
