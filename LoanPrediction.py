@@ -6,13 +6,21 @@ st.set_page_config(page_title="Input", page_icon="📈", layout="centered", init
 
 to_numeric = {'Male': 1, 'Female': 2, 'Yes': 1, 'No': 2, 'Graduate': 1, 'Not Graduate': 2, 'Urban': 3, 'Semiurban': 2, 'Rural': 1, 'Y': 1, 'N': 0, '3+': 3}
 
-if 'xgb' not in st.session_state:
-    df_preprocessed = pd.read_csv("cleaned_data.csv")
+@st.cache_resource
+def load_and_preprocess_data():
+    df = pd.read_csv("cleaned_data.csv")
+
+    df_preprocessed = load_and_preprocess_data()
 
     XGB = XGBClassifier()
     y = df_preprocessed['Loan_Status']
     X = df_preprocessed.drop('Loan_Status', axis=1)
     XGB.fit(X, y)
+
+    return XGB
+
+if 'xgb' not in st.session_state:
+    XGB = load_and_preprocess_data()
 
     st.session_state['xgb'] = XGB
 else:
