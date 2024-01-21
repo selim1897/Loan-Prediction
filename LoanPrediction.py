@@ -6,25 +6,8 @@ st.set_page_config(page_title="Input", page_icon="📈", layout="centered", init
 
 to_numeric = {'Male': 1, 'Female': 2, 'Yes': 1, 'No': 2, 'Graduate': 1, 'Not Graduate': 2, 'Urban': 3, 'Semiurban': 2, 'Rural': 1, 'Y': 1, 'N': 0, '3+': 3}
 
-@st.cache_data(hash_funcs={pd.DataFrame: id})
-def load_and_preprocess_data():
-    df = pd.read_csv("cleaned_data.csv")
-
-    df.drop('Loan_ID', axis=1, inplace=True)
-
-    null_cols = ['Credit_History', 'Self_Employed', 'LoanAmount', 'Dependents', 'Loan_Amount_Term', 'Gender', 'Married']
-
-    for col in null_cols:
-        df[col] = df[col].fillna(df[col].dropna().mode().values[0])
-
-    df = df.map(lambda label: to_numeric.get(label) if label in to_numeric else label)
-
-    df['Dependents'] = pd.to_numeric(df['Dependents'], errors='coerce').fillna(0)
-
-    return df
-
 if 'xgb' not in st.session_state:
-    df_preprocessed = load_and_preprocess_data()
+    df_preprocessed = pd.read_csv("cleaned_data.csv")
 
     XGB = XGBClassifier()
     y = df_preprocessed['Loan_Status']
