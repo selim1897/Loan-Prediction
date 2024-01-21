@@ -5,20 +5,6 @@ from xgboost import XGBClassifier
 
 st.set_page_config(page_title="Input", page_icon="📈", layout="centered", initial_sidebar_state="auto", menu_items=None)
 
-df = pd.read_csv("Data.csv")
-
-df.drop('Loan_ID',axis=1,inplace=True)
-
-null_cols = ['Credit_History', 'Self_Employed', 'LoanAmount','Dependents', 'Loan_Amount_Term', 'Gender', 'Married']
-
-
-for col in null_cols:
-    df[col] = df[col].fillna(
-    df[col].dropna().mode().values[0] )   
-
-    
-df.isnull().sum().sort_values(ascending=False)
-
 to_numeric = {'Male': 1, 'Female': 2,
 'Yes': 1, 'No': 2,
 'Graduate': 1, 'Not Graduate': 2,
@@ -26,18 +12,37 @@ to_numeric = {'Male': 1, 'Female': 2,
 'Y': 1, 'N': 0,
 '3+': 3}
 
-df = df.applymap(lambda lable: to_numeric.get(lable) if lable in to_numeric else lable)
+if 'xgb' not in st.session_state:
+    df = pd.read_csv("Data.csv")
 
-Dependents = pd.to_numeric(df.Dependents)
+    df.drop('Loan_ID',axis=1,inplace=True)
 
-df.drop(['Dependents'], axis = 1, inplace = True)
+    null_cols = ['Credit_History', 'Self_Employed', 'LoanAmount','Dependents', 'Loan_Amount_Term', 'Gender', 'Married']
 
-df = pd.concat([df, Dependents], axis = 1)
 
-XGB = XGBClassifier()
-y = df['Loan_Status']
-X = df.drop('Loan_Status', axis = 1)
-XGB.fit(X, y)
+    for col in null_cols:
+        df[col] = df[col].fillna(
+        df[col].dropna().mode().values[0] )   
+
+        
+    df.isnull().sum().sort_values(ascending=False)
+
+    df = df.map(lambda lable: to_numeric.get(lable) if lable in to_numeric else lable)
+
+    Dependents = pd.to_numeric(df.Dependents)
+
+    df.drop(['Dependents'], axis = 1, inplace = True)
+
+    df = pd.concat([df, Dependents], axis = 1)
+
+    XGB = XGBClassifier()
+    y = df['Loan_Status']
+    X = df.drop('Loan_Status', axis = 1)
+    XGB.fit(X, y)
+
+    st.session_state['xgb'] = XGB
+else:
+    XGB = st.session_state['xgb']
             
 def prediction():
     data = {'Gender':gender, 'Married':married, 'Dependents':dependents, 'Education':education, 'Self_Employed':self_employed, 'ApplicantIncome':applicant_income,
