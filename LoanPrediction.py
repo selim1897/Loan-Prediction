@@ -8,7 +8,7 @@ to_numeric = {'Male': 1, 'Female': 2, 'Yes': 1, 'No': 2, 'Graduate': 1, 'Not Gra
 
 @st.cache_data(hash_funcs={pd.DataFrame: id})
 def load_and_preprocess_data():
-    df = pd.read_csv("Data.csv")
+    df = pd.read_csv("cleaned_data.csv")
 
     df.drop('Loan_ID', axis=1, inplace=True)
 
@@ -17,7 +17,7 @@ def load_and_preprocess_data():
     for col in null_cols:
         df[col] = df[col].fillna(df[col].dropna().mode().values[0])
 
-    df = df.applymap(lambda label: to_numeric.get(label) if label in to_numeric else label)
+    df = df.map(lambda label: to_numeric.get(label) if label in to_numeric else label)
 
     df['Dependents'] = pd.to_numeric(df['Dependents'], errors='coerce').fillna(0)
 
@@ -100,5 +100,6 @@ if st.button("Predict", type="primary"):
 
 if 'info' in st.session_state:
     st.info(st.session_state['info'], icon="ℹ️")
+
 
 
