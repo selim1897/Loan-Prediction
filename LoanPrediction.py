@@ -1,33 +1,49 @@
 import pandas as pd
 import streamlit as st
+from sklearn.preprocessing import MinMaxScaler
 from xgboost import XGBClassifier
 
 st.set_page_config(page_title="Input", page_icon="📈", layout="centered", initial_sidebar_state="auto", menu_items=None)
 
-to_numeric = {'Male': 1, 'Female': 2, 'Yes': 1, 'No': 2, 'Graduate': 1, 'Not Graduate': 2, 'Urban': 3, 'Semiurban': 2, 'Rural': 1, 'Y': 1, 'N': 0, '3+': 3}
+to_numeric = {' Yes': 1, ' No': 2, ' Graduate': 1, ' Not Graduate': 2, ' Approved': 1, ' Rejected': 0}
+
+num_cols_normalization = [' income_annual', ' loan_amount', ' cibil_score', ' residential_assets_value', ' commercial_assets_value', ' luxury_assets_value', ' bank_asset_value']
 
 @st.cache_resource
 def load_and_preprocess_data():
-    df_preprocessed = pd.read_csv("cleaned_data.csv")
+    xgb = {}
+    
+    df = pd.read_csv("Data.csv")
+    df.drop('loan_id',axis=1,inplace=True)
+
+    df = df.applymap(lambda lable: to_numeric.get(lable) if lable in to_numeric else lable)
+
+    scaler_minmax = MinMaxScaler()
+    for col in num_cols_normalization:
+        df[col] = scaler_minmax.fit
+        xgb[col] = scaler_minmax
+        df[col] = scaler_minmax.transform(df[col].values.reshape(-1, 1))
 
     XGB = XGBClassifier()
-    y = df_preprocessed['Loan_Status']
-    X = df_preprocessed.drop('Loan_Status', axis=1)
+    y = df[' loan_status']
+    X = df.drop(' loan_status', axis=1)
     XGB.fit(X, y)
 
-    return XGB
+    xgb['XGB'] = XGB
+
+    return xgb
 
 if 'xgb' not in st.session_state:
-    XGB = load_and_preprocess_data()
+    xgb = load_and_preprocess_data()
 
-    st.session_state['xgb'] = XGB
+    st.session_state['xgb'] = xgb
 else:
-    XGB = st.session_state['xgb']
+    xgb = st.session_state['xgb']
             
 def prediction():
-    data = {'Gender':gender, 'Married':married, 'Dependents':dependents, 'Education':education, 'Self_Employed':self_employed, 'ApplicantIncome':applicant_income,
-    'CoapplicantIncome':coapplicant_income, 'LoanAmount':loan_amount, 'Loan_Amount_Term':loan_amount_term, 'Credit_History':credit_history,
-    'Property_Area':property_area}
+    data = {' no_of_dependents':dependents, ' education':education, ' self_employed':self_employed, ' income_annual':income_annual, ' loan_amount':loan_amount, 
+    ' loan_term':loan_amount_term, ' cibil_score':cibil_score, ' residential_assets_value':residential_assets_value, ' commercial_assets_value':commercial_assets_value, 
+    ' luxury_assets_value':luxury_assets_value, ' bank_asset_value':bank_asset_value}
 
     for key in data.keys():
         if data[key] is None:
@@ -38,9 +54,15 @@ def prediction():
 
     if 'info' in st.session_state:
         del st.session_state['info']
+
     
     x_pred = pd.DataFrame(data, index=[0])
-    y_predict = XGB.predict(x_pred)
+
+    for col in num_cols_normalization:
+        x_pred[col] = xgb[col].transform(x_pred[col].values.reshape(-1, 1))
+
+
+    y_predict = xgb['XGB'].predict(x_pred)
     if y_predict[0] == 0:
         st.error('We regret to inform you that your loan application has not been approved at this time. ')
     else:
@@ -48,17 +70,9 @@ def prediction():
 
 
 
-gender = st.selectbox(
-    'Gender',
-    ('Male', 'Female'), index=None, placeholder="Choose an option")
-
-married = st.selectbox(
-    'Married',
-    ('Yes', 'No'), index=None, placeholder="Choose an option")
-
 dependents = st.selectbox(
-    'Dependents',
-    (0, 1, 2, '3+'), index=None, placeholder="Choose an option")
+    ' no_of_dependents',
+    (0, 1, 2, 3, 4, 5), index=None, placeholder="Choose an option")
 
 education = st.selectbox(
     'Education',
@@ -68,27 +82,25 @@ self_employed = st.selectbox(
     'Self Employed',
     ('Yes', 'No'), index=None, placeholder="Choose an option")
 
-applicant_income = st.number_input('Applicant Income')
-
-coapplicant_income = st.number_input('Coapplicant Income')
+income_annual = st.number_input('Income_annual')
 
 loan_amount = st.number_input('Loan Amount')
 
-loan_amount_term = st.number_input('Loan Amount Term')
+loan_amount_term = st.number_input('Loan Amount Term', step=1)
 
-credit_history = st.selectbox(
-    'Credit History',
-    (0, 1), index=None, placeholder="Choose an option")
+cibil_score = st.number_input('cibil_score', min_value=0, max_value=1000, step=1)
 
-property_area = st.selectbox(
-    'Property Area',
-    ('Urban', 'Semiurban', 'Rural'), index=None, placeholder="Choose an option")
+residential_assets_value = st.number_input('residential_assets_value')
+
+commercial_assets_value	= st.number_input('commercial_assets_value')
+
+luxury_assets_value	= st.number_input('luxury_assets_value')
+
+bank_asset_value = st.number_input('bank_asset_value')
+
 
 if st.button("Predict", type="primary"):
     prediction()
 
 if 'info' in st.session_state:
     st.info(st.session_state['info'], icon="ℹ️")
-
-
-
