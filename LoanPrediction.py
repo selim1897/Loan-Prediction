@@ -5,6 +5,8 @@ from xgboost import XGBClassifier
 
 st.set_page_config(page_title="Input", page_icon="📈", layout="centered", initial_sidebar_state="auto", menu_items=None)
 
+st.image('Tek-up_Logo.png')
+
 to_numeric = {' Yes': 1, ' No': 2, ' Graduate': 1, ' Not Graduate': 2, ' Approved': 1, ' Rejected': 0}
 
 num_cols_normalization = [' income_annual', ' loan_amount', ' cibil_score', ' residential_assets_value', ' commercial_assets_value', ' luxury_assets_value', ' bank_asset_value']
