@@ -76,11 +76,11 @@ dependents = st.selectbox(
 
 education = st.selectbox(
     'Education',
-    ('Graduate', 'Not Graduate'), index=None, placeholder="Choose an option")
+    (' Graduate', ' Not Graduate'), index=None, placeholder="Choose an option")
 
 self_employed = st.selectbox(
     'Self Employed',
-    ('Yes', 'No'), index=None, placeholder="Choose an option")
+    (' Yes', ' No'), index=None, placeholder="Choose an option")
 
 income_annual = st.number_input('Income_annual')
 
