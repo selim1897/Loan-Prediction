@@ -18,8 +18,8 @@ def load_and_preprocess_data():
 
     df = df.applymap(lambda lable: to_numeric.get(lable) if lable in to_numeric else lable)
 
-    scaler_minmax = MinMaxScaler()
     for col in num_cols_normalization:
+        scaler_minmax = MinMaxScaler()
         scaler_minmax.fit(df[col].values.reshape(-1, 1))
         xgb[col] = scaler_minmax
         df[col] = scaler_minmax.transform(df[col].values.reshape(-1, 1))
