@@ -1,7 +1,6 @@
 import pandas as pd
 import streamlit as st
-from sklearn.preprocessing import MinMaxScaler
-from xgboost import XGBClassifier
+import joblib
 
 st.set_page_config(page_title="Input", page_icon="📈", layout="centered", initial_sidebar_state="auto", menu_items=None)
 
@@ -11,36 +10,19 @@ to_numeric = {' Yes': 1, ' No': 2, ' Graduate': 1, ' Not Graduate': 2, ' Approve
 
 num_cols_normalization = [' income_annual', ' loan_amount', ' cibil_score', ' residential_assets_value', ' commercial_assets_value', ' luxury_assets_value', ' bank_asset_value']
 
-@st.cache_resource
-def load_and_preprocess_data():
-    xgb = {}
-    
-    df = pd.read_csv("Data.csv")
-    df.drop('loan_id',axis=1,inplace=True)
-
-    df = df.applymap(lambda lable: to_numeric.get(lable) if lable in to_numeric else lable)
-
-    for col in num_cols_normalization:
-        scaler_minmax = MinMaxScaler()
-        scaler_minmax.fit(df[col].values.reshape(-1, 1))
-        xgb[col] = scaler_minmax
-        df[col] = scaler_minmax.transform(df[col].values.reshape(-1, 1))
-
-    XGB = XGBClassifier()
-    y = df[' loan_status']
-    X = df.drop(' loan_status', axis=1)
-    XGB.fit(X, y)
-
-    xgb['XGB'] = XGB
-
-    return xgb
-
 if 'xgb' not in st.session_state:
-    xgb = load_and_preprocess_data()
+    xgb = joblib.load('xgb_model.pkl')
 
     st.session_state['xgb'] = xgb
 else:
     xgb = st.session_state['xgb']
+
+if 'scaler' not in st.session_state:
+    scaler = joblib.load('scaler_minmax.pkl')
+
+    st.session_state['scaler'] = scaler
+else:
+    scaler = st.session_state['scaler']
             
 def prediction():
     data = {' no_of_dependents':dependents, ' education':education, ' self_employed':self_employed, ' income_annual':income_annual, ' loan_amount':loan_amount, 
@@ -60,11 +42,13 @@ def prediction():
     
     x_pred = pd.DataFrame(data, index=[0])
 
-    for col in num_cols_normalization:
-        x_pred[col] = xgb[col].transform(x_pred[col].values.reshape(-1, 1))
+    variables_to_scale = [' income_annual', ' loan_amount', ' loan_term',' cibil_score', ' residential_assets_value', ' commercial_assets_value', 
+                      ' luxury_assets_value', ' bank_asset_value']
+
+    x_pred[variables_to_scale] = scaler.transform(x_pred[variables_to_scale])
 
 
-    y_predict = xgb['XGB'].predict(x_pred)
+    y_predict = xgb.predict(x_pred)
     if y_predict[0] == 0:
         st.error('We regret to inform you that your loan application has not been approved at this time. ')
     else:
